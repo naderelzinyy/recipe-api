@@ -16,7 +16,8 @@ class UserManager(BaseUserManager):
         """Creates a user."""
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
-        # "using=db" to indicate a specific database if we are using more than one.
+        # "using=db" to indicate a specific database if
+        # we are using more than one.
         user.save(using=self.db)
         return user
 
