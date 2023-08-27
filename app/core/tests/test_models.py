@@ -29,7 +29,10 @@ class ModelTester(TestCase):
         ]
 
         for email, expected in sample_emails:
-            user = get_user_model().objects.create_user(email=email, password="sample123")
+            user = get_user_model().objects.create_user(
+                email=email,
+                password="sample123"
+            )
             self.assertEqual(user.email, expected)
 
     def test_email_is_not_empty(self) -> None:
