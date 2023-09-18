@@ -10,6 +10,7 @@ from rest_framework import status
 
 CREATE_USER_URL = reverse("user:create")
 TOKEN_URL = reverse("user:token")
+ME_URL = reverse("user:me")
 
 
 def create_user(**kwargs):
@@ -92,3 +93,42 @@ class PublicUserTests(TestCase):
         response = self.client.post(TOKEN_URL, payload)
         self.assertNotIn("token", response.data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class PrivateUserTests(TestCase):
+    """Contains the tests that require authentication."""
+    def setUp(self) -> None:
+        self.user = create_user(
+            email="testexp@example.com",
+            password="pass123",
+            name="test exp"
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_successful_profile_retrieving(self) -> None:
+        """Test for success profile retrieve."""
+        response = self.client.get(ME_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {
+            "name": self.user.name,
+            "email": self.user.email
+        })
+
+    def test_post_not_allowed(self) -> None:
+        """Test post functions not allowed for ME_URL"""
+        response = self.client.post(ME_URL, {})
+        self.assertEqual(response.status_code,
+                         status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_update_user_info(self) -> None:
+        """Test for updating user profile data."""
+        payload = {
+            "name": "new name",
+            "password": "newpass123"
+        }
+        response = self.client.patch(ME_URL, payload)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.name, payload.get("name"))
+        self.assertTrue(self.user.check_password(payload.get("password")))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
