@@ -3,10 +3,13 @@ Django models test
 """
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from decimal import Decimal
+from core import models
 
 
 class ModelTester(TestCase):
     """A tester class contains models tests."""
+
     def test_user_creation_with_email(self) -> None:
         """Test user creation with email."""
         email = "test@example.com"
@@ -47,3 +50,18 @@ class ModelTester(TestCase):
         )
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+
+    def test_create_recipe(self) -> None:
+        """Test for recipe creation."""
+        user = get_user_model().objects.create_user(
+            "test@example.com",
+            "pass123"
+        )
+        recipe = models.Recipe.objects.create(
+            user=user,
+            title="First recipe",
+            time_minutes=5,
+            price=Decimal("20.50"),
+            description="A delicious first recipe."
+        )
+        self.assertEqual(str(recipe), recipe.title)
