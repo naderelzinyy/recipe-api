@@ -9,10 +9,16 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from core.models import Recipe
 from rest_framework import status
-from recipe.serializers import RecipeSerializer
+from recipe.serializers import (RecipeSerializer,
+                                RecipeDetailSerializer)
 
 
 RECIPE_URL = reverse("recipe:recipe-list")
+
+
+def get_detailed_url(recipe_id):
+    """Return a recipe url."""
+    return reverse("recipe:recipe-detail", args=[recipe_id])
 
 
 def create_recipe(user, **kwargs):
@@ -56,7 +62,7 @@ class PrivateRecipeAPITests(TestCase):
 
         response = self.client.get(RECIPE_URL)
 
-        recipes = Recipe.objects.all().order_by("id")
+        recipes = Recipe.objects.all().order_by("-id")
         serializer = RecipeSerializer(recipes, many=True)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
@@ -75,3 +81,25 @@ class PrivateRecipeAPITests(TestCase):
         serializer = RecipeSerializer(recipes, many=True)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
+
+    def test_get_specific_user_recipe(self) -> None:
+        """Test the feature of getting a specigic user's recipes."""
+        recipe = create_recipe(user=self.user)
+
+        response = self.client.get(get_detailed_url(recipe.id))
+        serializer = RecipeDetailSerializer(recipe)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_recipe_creation(self) -> None:
+        """Test for creating a recipe."""
+        payload = {
+            "title": "Creation test recipe",
+            "time_minutes": 10,
+            "price": Decimal("20.40")
+        }
+        response = self.client.post(RECIPE_URL, payload)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        recipe = Recipe.objects.get(id=response.data["id"])
+        for k, v in payload.items():
+            self.assertEqual(getattr(recipe, k), v)
+        self.assertEqual(recipe.user, self.user)
